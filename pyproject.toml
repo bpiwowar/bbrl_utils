@@ -5,7 +5,17 @@ license = { text = "MIT" }
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Benjamin Piwowarski", email = "benjamin@piwowarski.fr" }]
-dependencies = ["bbrl"]
+dependencies = [
+    "bbrl>=0.2.2",
+    "swig",
+    "swig",
+    "bbrl_gymnasium>=0.3.5",
+    "bbrl_gymnasium[box2d]",
+    "bbrl_gymnasium[classic_control]",
+    "tensorboard",
+    "moviepy",
+    "box2d-kengz",
+]
 
 [project.urls]
 Repository = "https://github.com/bpiwowar/bbrl_utils"

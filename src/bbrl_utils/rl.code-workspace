@@ -1,0 +1,80 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../bbrl"
+		},
+		{
+			"path": "../../../../misc/easypip"
+		},
+		{
+			"path": "../../../rld@dac"
+		}
+	],
+	"settings": {
+		"search.exclude": {
+			"bbrl-utils//dist": true,
+			"bbrl-utils/bbrl_utils.egg-info": true,
+			"bbrl-utils/__pycache__": true,
+			"bbrl-utils/src/bbrl_utils/_version.py": true,
+			"bbrl-utils//build": true,
+			"bbrl-utils//.idea": true,
+			"bbrl-utils/.pytest_cache/# Created by pytest automatically.": true,
+			"bbrl-utils/.pytest_cache/*": true,
+			"bbrl/dist/": true,
+			"bbrl/bbrl.egg-info/": true,
+			"bbrl/__pycache__": true,
+			"bbrl/src/bbrl/_version.py": true,
+			"bbrl//build": true,
+			"bbrl//.idea": true,
+			"bbrl/.pytest_cache/# Created by pytest automatically.": true,
+			"bbrl/.pytest_cache/*": true,
+			"rl/videos": true,
+			"rl/student/": true,
+			"rl/teacher/": true,
+			"rl/tested/": true,
+			"rl/tblogs/": true,
+			"rl/ppo_agent/": true,
+			"rl/agents/": true,
+			"rl/tmp/": true,
+			"rl/.deps/": true,
+			"rl/.test_env": true,
+			"rl/outputs": true,
+			"rl/.pytest_cache/# Created by pytest automatically.": true,
+			"rl/.pytest_cache/*": true
+		},
+		"files.exclude": {
+			"bbrl-utils//dist": true,
+			"bbrl-utils/bbrl_utils.egg-info": true,
+			"bbrl-utils/__pycache__": true,
+			"bbrl-utils/src/bbrl_utils/_version.py": true,
+			"bbrl-utils//build": true,
+			"bbrl-utils//.idea": true,
+			"bbrl-utils/.pytest_cache/# Created by pytest automatically.": true,
+			"bbrl-utils/.pytest_cache/*": true,
+			"bbrl/dist/": true,
+			"bbrl/bbrl.egg-info/": true,
+			"bbrl/__pycache__": true,
+			"bbrl/src/bbrl/_version.py": true,
+			"bbrl//build": true,
+			"bbrl//.idea": true,
+			"bbrl/.pytest_cache/# Created by pytest automatically.": true,
+			"bbrl/.pytest_cache/*": true,
+			"rl/videos": true,
+			"rl/student/": true,
+			"rl/teacher/": true,
+			"rl/tested/": true,
+			"rl/tblogs/": true,
+			"rl/ppo_agent/": true,
+			"rl/agents/": true,
+			"rl/tmp/": true,
+			"rl/.deps/": true,
+			"rl/.test_env": true,
+			"rl/outputs": true,
+			"rl/.pytest_cache/# Created by pytest automatically.": true,
+			"rl/.pytest_cache/*": true
+		}
+	}
+}
