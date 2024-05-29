@@ -1,0 +1,18 @@
+[project]
+name = "bbrl_utils"
+description = "Utilities for notebooks built around BBRL"
+license = { text = "MIT" }
+dynamic = ["version"]
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [{ name = "Benjamin Piwowarski", email = "benjamin@piwowarski.fr" }]
+dependencies = ["bbrl"]
+
+[project.urls]
+Repository = "https://github.com/bpiwowar/bbrl_utils"
+
+[tool.setuptools_scm]
+write_to = "src/bbrl_utils/_version.py"
+
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
