@@ -7,41 +7,13 @@ from typing import Any, Iterator
 import numpy as np
 from omegaconf import OmegaConf
 import torch
+from bbrl.utils.replay_buffer import ReplayBuffer
 from bbrl.agents import Agent, Agents, TemporalAgent
 from bbrl.agents.gymnasium import ParallelGymAgent, make_env, record_video
 from bbrl.workspace import Workspace
 
 from bbrl_utils.logger import Logger
 from bbrl_utils.notebook import tqdm, video_display
-
-# # Learning environment
-#
-# To setup a common learning environment for RL algorithms, we use the `RLBase`
-# class. This class:
-#
-# 1. Initializes the environment (random seed, logger, evaluation environment)
-# 2. Defines a `evaluate` method which evaluates the current `eval_policy` and
-#    keeps the best agent so far
-# 3. Defines a `visualize_best` method which displays the behavior of the best
-#    agent
-#
-# **Subclasses need to define** `self.train_policy` and `self.eval_policy`, two
-# BBRL agents which respectively choose actions when training and evaluating.
-#
-# The behavior of `RLBase` is controlled by the following configuration
-# variables:
-#
-# - `base_dir` defines the directory subpath used when outputing losses during
-# training as well as other outputs (serialized agent, global statistics, etc.)
-# - `algorithm.seed` defines the random seed used (to initialize the agent and
-#   the environment)
-# - `gym_env` defines the gymnasium environment, and in particular
-# `gym_env.env_name` the name of the gymnasium environment
-# - `logger` defines what type of logger is used to log the different values
-# associated with learning
-# - `algorithm.eval_interval` defines the number of observed transitions between
-# each evaluation of the agent
-#
 
 
 class RLBase(ABC):
@@ -51,6 +23,31 @@ class RLBase(ABC):
 
     - defines the logger, the train and evaluation agents
     - defines how to evaluate a policy
+
+    This class:
+
+    1. Initializes the environment (random seed, logger, evaluation environment)
+    2. Defines a `evaluate` method which evaluates the current `eval_policy` and
+    keeps the best agent so far 3. Defines a `visualize_best` method which
+    displays the behavior of the best agent
+
+    **Subclasses need to define** `self.train_policy` (and optionally
+    `self.eval_policy`), two BBRL agents which respectively choose actions when
+    training and evaluating.
+
+    The behavior of `RLBase` is controlled by the following configuration
+    variables:
+    - `base_dir` defines the directory subpath used when outputting losses
+    during training as well as other outputs (serialized agent, global statistics,
+    etc.)
+    - `algorithm.seed` defines the random seed used (to initialize the
+    agent and the environment)
+    - `gym_env` defines the gymnasium environment,
+    and in particular `gym_env.env_name` the name of the gymnasium environment
+    - `logger` defines what type of logger is used to log the different values
+    associated with learning
+    - `algorithm.eval_interval` defines the number of
+    observed transitions between each evaluation of the agent
     """
 
     #: The configuration
@@ -190,6 +187,111 @@ class RLBase(ABC):
         return video_display(str(path.absolute()))
 
 
+class EpochBasedAlgo(RLBase):
+    """RL environment when using transition buffers"""
+
+    train_agent: TemporalAgent
+
+    """Base class for RL experiments with full episodes"""
+
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
+        # We use a non-autoreset workspace
+        self.train_env = ParallelGymAgent(
+            partial(make_env, cfg.gym_env.env_name, autoreset=True),
+            cfg.algorithm.n_envs,
+        ).seed(cfg.algorithm.seed)
+
+        # Configure the workspace to the right dimension
+        # Note that no parameter is needed to create the workspace.
+        self.replay_buffer = ReplayBuffer(max_size=cfg.algorithm.buffer_size)
+
+    def iter_replay_buffers(self):
+        """Loop over transition buffers
+
+        `iter_replay_buffers` provides an easy access to the replay buffer when
+        learning. Its behavior depends on several configuration values:
+
+        - `cfg.algorithm.max_epochs` defines the number of times the agent is used to
+        collect transitions
+        - `cfg.algorithm.learning_starts` defines the number of transitions before
+        learning starts
+
+        Using `iter_replay_buffers` is simple:
+
+        ```py
+        class MyAlgo(EpochBasedAlgo):
+            def __init__(self, cfg):
+                super().__init__(cfg)
+
+                # Define the train and evaluation policies
+                # (the agents compute the workspace `action` variable)
+                self.train_policy = ...
+                self.eval_policy = ...
+
+        rl_algo = MyAlgo(cfg)
+        for rb in iter_replay_buffers(rl_algo):
+            # rb is a workspace containing transitions
+            ...
+        ```
+        """
+        train_workspace = Workspace()
+
+        epochs_pb = tqdm(range(self.cfg.algorithm.max_epochs))
+        for epoch in epochs_pb:
+            # This is the tricky part with transition buffers. The difficulty lies in the
+            # copy of the last step and the way to deal with the n_steps return.
+            #
+            # The call to `train_agent(workspace, t=1, n_steps=cfg.algorithm.n_timesteps -
+            # 1, stochastic=True)` makes the agent run a number of steps in the workspace.
+            # In practice, it calls the
+            # [`__call__(...)`](https://github.com/osigaud/bbrl/blob/master/src/bbrl/agents/agent.py#L59)
+            # function which makes a forward pass of the agent network using the workspace
+            # data and updates the workspace accordingly.
+            #
+            # Now, if we start at the first epoch (`epoch=0`), we start from the first step
+            # (`t=0`). But when subsequently we perform the next epochs (`epoch>0`), we must
+            # not forget to cover the transition at the border between the previous epoch
+            # and the current epoch. To avoid this risk, we copy the information from the
+            # last time step of the previous epoch into the first time step of the next
+            # epoch. This is explained in more details in [a previous
+            # notebook](https://colab.research.google.com/drive/1W9Y-3fa6LsPeR6cBC1vgwBjKfgMwZvP5).
+            if epoch == 0:
+                # First run: we start from scratch
+                self.train_agent(
+                    train_workspace,
+                    t=0,
+                    n_steps=self.cfg.algorithm.n_steps + 1,
+                    stochastic=True,
+                )
+            else:
+                # Other runs: we copy the last step and start from there
+                train_workspace.zero_grad()
+                train_workspace.copy_n_last_steps(1)
+                self.train_agent(
+                    train_workspace,
+                    t=1,
+                    n_steps=self.cfg.algorithm.n_steps,
+                    stochastic=True,
+                )
+
+            self.nb_steps += self.cfg.algorithm.n_steps * self.cfg.algorithm.n_envs
+
+            # Add transitions to buffer
+            transition_workspace = train_workspace.get_transitions()
+            self.replay_buffer.put(transition_workspace)
+            if self.replay_buffer.size() > self.cfg.algorithm.learning_starts:
+                yield self.replay_buffer
+
+            # Eval
+            epochs_pb.set_description(
+                f"nb_steps: {self.nb_steps}, "
+                f"best reward: {self.best_reward: .2f}, "
+                f"running reward: {self.running_reward: .2f}"
+            )
+
+
 class EpisodicAlgo(RLBase):
     """Base class for RL experiments with full episodes"""
 
@@ -200,7 +302,6 @@ class EpisodicAlgo(RLBase):
             partial(make_env, cfg.gym_env.env_name, autoreset=autoreset),
             cfg.algorithm.n_envs,
         ).seed(cfg.algorithm.seed)
-
 
     def iter_episodes(self) -> Iterator[Workspace]:
         """Iterate over episodes without auto-reset.
@@ -223,13 +324,10 @@ class EpisodicAlgo(RLBase):
 
             # Eval
             pbar.set_description(
-                f"nb_steps: {self.nb_steps}, best reward: {self.best_reward:.2f}"
+                f"nb_steps: {self.nb_steps}, best reward: {self.best_reward: .2f}"
             )
 
-
-    def iter_partial_episodes(
-        self, episode_steps: int=None
-    ) -> Iterator[Workspace]:
+    def iter_partial_episodes(self, episode_steps: int = None) -> Iterator[Workspace]:
         """Iterate over partial episodes
 
         Returns an iterator over workspaces. Each workspace contains exactly
@@ -252,8 +350,8 @@ class EpisodicAlgo(RLBase):
 
             pbar.set_description(
                 f"nb_steps: {self.nb_steps}, "
-                f"reward: best={self.best_reward:.2f}, "
-                f"running={self.running_reward:.2f}"
+                f"reward: best={self.best_reward: .2f}, "
+                f"running={self.running_reward: .2f}"
             )
 
 
