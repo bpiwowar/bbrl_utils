@@ -7,13 +7,9 @@ readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Benjamin Piwowarski", email = "benjamin@piwowarski.fr" }]
 dependencies = [
     "bbrl>=0.2.2",
-    "swig",
-    "swig",
     "bbrl_gymnasium>=0.3.5",
-    "bbrl_gymnasium",
     "tensorboard",
     "moviepy",
-    "box2d-kengz",
 ]
 
 [project.urls]
