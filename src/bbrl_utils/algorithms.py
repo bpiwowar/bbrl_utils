@@ -63,7 +63,7 @@ class RLBase(ABC):
     #: The evaluation policy (if not defined, uses the training policy)
     eval_policy: Agent
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, env_wrappers=[]):
         # Basic initialization
         self.cfg = cfg
         torch.manual_seed(cfg.algorithm.seed)
@@ -153,23 +153,34 @@ class RLBase(ABC):
             eval_workspace = Workspace()
             self.eval_agent(eval_workspace, t=0, stop_variable="env/done")
             rewards = eval_workspace["env/cumulated_reward"][-1]
-            self.logger.log_reward_losses(rewards, self.nb_steps)
+            self.register_evaluation(rewards)
 
-            if getattr(self.cfg, "collect_stats", False):
-                self.eval_rewards.append(rewards)
+    def register_evaluation(self, rewards: torch.Tensor, policy=None):
+        """Directly registers an evaluation
 
-            rewards_mean = rewards.mean()
+        :param rewards: The rewards obtained
+        :param policy: The policy agent
+        """
+        self.logger.log_reward_losses(rewards, self.nb_steps)
 
-            if self.running_reward == -torch.inf:
-                self.running_reward = rewards_mean
-            else:
-                self.running_reward = (
-                    1.0 - self.running_reward_alpha
-                ) * rewards_mean + self.running_reward_alpha * self.running_reward
-            if rewards_mean > self.best_reward:
-                self.best_policy = copy.deepcopy(self.eval_policy)
-                self.best_reward = rewards_mean
-                return True
+        if getattr(self.cfg, "collect_stats", False):
+            self.eval_rewards.append(rewards)
+
+        rewards_mean = rewards.mean()
+
+        if self.running_reward == -torch.inf:
+            self.running_reward = rewards_mean
+        else:
+            self.running_reward = (
+                1.0 - self.running_reward_alpha
+            ) * rewards_mean + self.running_reward_alpha * self.running_reward
+
+        if rewards_mean > self.best_reward:
+            self.best_policy = copy.deepcopy(
+                self.eval_policy if policy is None else policy
+            )
+            self.best_reward = rewards_mean
+            return True
 
     def save_stats(self):
         """Save reward statistics into `stats.npy`"""
@@ -194,12 +205,14 @@ class EpochBasedAlgo(RLBase):
 
     """Base class for RL experiments with full episodes"""
 
-    def __init__(self, cfg):
-        super().__init__(cfg)
+    def __init__(self, cfg, env_wrappers=[]):
+        super().__init__(cfg, env_wrappers=[])
 
         # We use a non-autoreset workspace
         self.train_env = ParallelGymAgent(
-            partial(make_env, cfg.gym_env.env_name, autoreset=True),
+            partial(
+                make_env, cfg.gym_env.env_name, autoreset=True, wrappers=env_wrappers
+            ),
             cfg.algorithm.n_envs,
         ).seed(cfg.algorithm.seed)
 
@@ -295,11 +308,16 @@ class EpochBasedAlgo(RLBase):
 class EpisodicAlgo(RLBase):
     """Base class for RL experiments with full episodes"""
 
-    def __init__(self, cfg, autoreset=False):
+    def __init__(self, cfg, autoreset=False, env_wrappers=[]):
         super().__init__(cfg)
 
         self.train_env = ParallelGymAgent(
-            partial(make_env, cfg.gym_env.env_name, autoreset=autoreset),
+            partial(
+                make_env,
+                cfg.gym_env.env_name,
+                autoreset=autoreset,
+                wrappers=env_wrappers,
+            ),
             cfg.algorithm.n_envs,
         ).seed(cfg.algorithm.seed)
 
@@ -356,4 +374,5 @@ class EpisodicAlgo(RLBase):
 
 
 iter_episodes = EpisodicAlgo.iter_episodes
+iter_replay_buffers = EpochBasedAlgo.iter_replay_buffers
 iter_partial_episodes = EpisodicAlgo.iter_partial_episodes
