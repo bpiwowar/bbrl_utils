@@ -82,14 +82,16 @@ def setup_tensorboard(path):
 
     if answer == "y":
         MODE.get().run_line_magic("load_ext", "tensorboard")
-        MODE.get().run_line_magic("tensorboard", f"--logdir {outputs_dir().absolute()}")
+        MODE.get().run_line_magic(
+            "tensorboard", f"""--logdir '{outputs_dir().absolute()}'"""
+        )
     else:
         import os.path as osp
         import sys
 
         print(
             f"Launch tensorboard from the shell: \n{osp.dirname(sys.executable)}"
-            f"/tensorboard --logdir={outputs_dir().absolute()}"
+            f"/tensorboard --logdir '{outputs_dir().absolute()}'"
         )
 
 
