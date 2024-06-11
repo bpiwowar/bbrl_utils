@@ -1,7 +1,8 @@
+import os
 import logging
 from enum import Enum
 from pathlib import Path
-from time import strftime
+from functools import lru_cache
 
 
 class IPython(Enum):
@@ -17,7 +18,7 @@ class IPython(Enum):
 
     @staticmethod
     def get():
-        return get_ipython()
+        return get_ipython()  # noqa: F821
 
     @staticmethod
     def mode():
@@ -81,12 +82,26 @@ def setup_tensorboard(path):
 
     if answer == "y":
         MODE.get().run_line_magic("load_ext", "tensorboard")
-        MODE.get().run_line_magic("tensorboard", f"--logdir {path.absolute()}")
+        MODE.get().run_line_magic("tensorboard", f"--logdir {outputs_dir().absolute()}")
     else:
         import os.path as osp
         import sys
 
         print(
-            f"Launch tensorboard from the shell:\n{osp.dirname(sys.executable)}"
-            f"/tensorboard --logdir={path.absolute()}"
+            f"Launch tensorboard from the shell: \n{osp.dirname(sys.executable)}"
+            f"/tensorboard --logdir={outputs_dir().absolute()}"
         )
+
+
+@lru_cache()
+def testing_mode():
+    """Return whether the notebook is in testing mode"""
+    return os.environ.get("TESTING_MODE", "").lower() in ["on", "1"]
+
+
+@lru_cache()
+def outputs_dir():
+    """Returns the working directory"""
+    if testing_mode():
+        return Path("outputs-testing")
+    return Path("outputs")

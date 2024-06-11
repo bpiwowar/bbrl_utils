@@ -13,7 +13,7 @@ from bbrl.agents.gymnasium import ParallelGymAgent, make_env, record_video
 from bbrl.workspace import Workspace
 
 from bbrl_utils.logger import Logger
-from bbrl_utils.notebook import tqdm, video_display
+from bbrl_utils.notebook import tqdm, video_display, outputs_dir
 
 
 class RLBase(ABC):
@@ -70,7 +70,7 @@ class RLBase(ABC):
 
         # Sets the base directory and logger directory
         base_dir = Path(self.cfg.base_dir)
-        self.base_dir = Path("outputs") / Path(self.cfg.base_dir)
+        self.base_dir = outputs_dir() / Path(self.cfg.base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize the logger class
@@ -85,7 +85,7 @@ class RLBase(ABC):
             )
 
         if not hasattr(logger_cfg, "log_dir"):
-            logger_cfg.log_dir = str(Path("outputs") / "tblogs" / base_dir)
+            logger_cfg.log_dir = str(outputs_dir() / "tblogs" / base_dir)
 
         self.logger = Logger(logger_cfg)
 
