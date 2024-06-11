@@ -1,14 +1,17 @@
-from typing import List
+from typing import List, Union
 import numpy as np
 import torch.nn as nn
 from itertools import chain
 from bbrl import get_arguments, get_class
 
 
-def setup_optimizer(cfg_optimizer, *agents: nn.Module):
+def setup_optimizer(cfg_optimizer, *agents: Union[nn.Module, nn.Parameter]):
     """Setup an optimizer for a list of agents"""
     optimizer_args = get_arguments(cfg_optimizer)
-    parameters = [agent.parameters() for agent in agents]
+    parameters = [
+        agent.parameters() if isinstance(agent, nn.Module) else [agent]
+        for agent in agents
+    ]
     optimizer = get_class(cfg_optimizer)(chain(*parameters), **optimizer_args)
     return optimizer
 
