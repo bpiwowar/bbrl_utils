@@ -66,6 +66,7 @@ class RLBase(ABC):
     def __init__(self, cfg, env_wrappers=[]):
         # Basic initialization
         self.cfg = cfg
+        self.make_env = partial(make_env, cfg.gym_env.env_name, wrappers=env_wrappers)
         torch.manual_seed(cfg.algorithm.seed)
 
         # Sets the base directory and logger directory
@@ -94,9 +95,9 @@ class RLBase(ABC):
         self.eval_policy = None
 
         # Sets up the evaluation environment
-        self.eval_env = ParallelGymAgent(
-            partial(make_env, cfg.gym_env.env_name), cfg.algorithm.nb_evals
-        ).seed(cfg.algorithm.seed)
+        self.eval_env = ParallelGymAgent(self.make_env, cfg.algorithm.nb_evals).seed(
+            cfg.algorithm.seed
+        )
 
         # Initialize values
         self.last_eval_step = 0
@@ -191,7 +192,7 @@ class RLBase(ABC):
 
     def visualize_best(self):
         """Visualize the best agent"""
-        env = make_env(self.cfg.gym_env.env_name, render_mode="rgb_array")
+        env = self.make_env(render_mode="rgb_array")
         path = self.base_dir / "best_agent.mp4"
         print(f"Video of best agent recorded in {path}")
         record_video(env, self.best_policy, path)
@@ -210,9 +211,7 @@ class EpochBasedAlgo(RLBase):
 
         # We use a non-autoreset workspace
         self.train_env = ParallelGymAgent(
-            partial(
-                make_env, cfg.gym_env.env_name, autoreset=True, wrappers=env_wrappers
-            ),
+            partial(self.make_env, autoreset=True),
             cfg.algorithm.n_envs,
         ).seed(cfg.algorithm.seed)
 
@@ -309,14 +308,12 @@ class EpisodicAlgo(RLBase):
     """Base class for RL experiments with full episodes"""
 
     def __init__(self, cfg, autoreset=False, env_wrappers=[]):
-        super().__init__(cfg)
+        super().__init__(cfg, env_wrappers=env_wrappers)
 
         self.train_env = ParallelGymAgent(
             partial(
-                make_env,
-                cfg.gym_env.env_name,
+                self.make_env,
                 autoreset=autoreset,
-                wrappers=env_wrappers,
             ),
             cfg.algorithm.n_envs,
         ).seed(cfg.algorithm.seed)
