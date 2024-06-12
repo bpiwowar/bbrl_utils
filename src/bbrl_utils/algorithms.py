@@ -141,7 +141,7 @@ class RLBase(ABC):
             )
         )
 
-    def evaluate(self):
+    def evaluate(self, force=False):
         """Evaluate the current policy `self.eval_policy`
 
         Evaluation is conducted every `cfg.algorithm.eval_interval` steps, and
@@ -149,7 +149,9 @@ class RLBase(ABC):
 
         Returns True if the current policy is the best so far
         """
-        if (self.nb_steps - self.last_eval_step) > self.cfg.algorithm.eval_interval:
+        if force or (
+            (self.nb_steps - self.last_eval_step) > self.cfg.algorithm.eval_interval
+        ):
             self.last_eval_step = self.nb_steps
             eval_workspace = Workspace()
             self.eval_agent(eval_workspace, t=0, stop_variable="env/done")
