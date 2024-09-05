@@ -209,7 +209,12 @@ class EpochBasedAlgo(RLBase):
     """Base class for RL experiments with full episodes"""
 
     def __init__(self, cfg, env_wrappers=[]):
-        super().__init__(cfg, env_wrappers=[])
+        """Creates a new epoch-based RL algorithm
+
+        :param cfg: The configuration
+        :param env_wrappers: A list of factories, defaults to []
+        """
+        super().__init__(cfg, env_wrappers=env_wrappers)
 
         # We use a non-autoreset workspace
         self.train_env = ParallelGymAgent(
