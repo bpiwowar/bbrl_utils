@@ -48,7 +48,12 @@ else:
 
 if MODE.is_notebook():
     # Use video display
-    from moviepy.editor import ipython_display as video_display  # noqa: F401
+    try:
+        from moviepy.editor import ipython_display as video_display  # noqa: F401
+    except ImportError:
+        # No moviepy, just do nothing
+        def video_display(*args, **kwargs):  # noqa: F811
+            print("moviepy is not installed, skipping video display")
 
     # Ensures that we load matplotlib properly in notebooks
     IPython.get().run_line_magic("matplotlib", "inline")
