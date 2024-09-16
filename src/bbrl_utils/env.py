@@ -10,7 +10,7 @@ def setup(maze_mdp=False, box2d=True):
     from easypip import easyinstall
 
     if maze_mdp:
-        easyinstall("mazemdp")
+        easyinstall("mazemdp>=1.2.1")
 
     if box2d:
         easyinstall("swig")
