@@ -295,10 +295,12 @@ class EpochBasedAlgo(RLBase):
                     stochastic=True,
                 )
 
-            self.nb_steps += self.cfg.algorithm.n_steps * self.cfg.algorithm.n_envs
-
             # Add transitions to buffer
             transition_workspace = train_workspace.get_transitions()
+
+            # ... and adds the number of transitions
+            self.nb_steps += transition_workspace.batch_size()
+
             self.replay_buffer.put(transition_workspace)
             if self.replay_buffer.size() > self.cfg.algorithm.learning_starts:
                 yield self.replay_buffer
