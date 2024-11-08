@@ -156,13 +156,15 @@ class RLBase(ABC):
             eval_workspace = Workspace()
             self.eval_agent(eval_workspace, t=0, stop_variable="env/done")
             rewards = eval_workspace["env/cumulated_reward"][-1]
-            self.register_evaluation(rewards)
+            return self.register_evaluation(rewards)
 
     def register_evaluation(self, rewards: torch.Tensor, policy=None):
         """Directly registers an evaluation
 
         :param rewards: The rewards obtained
         :param policy: The policy agent
+
+        Returns True if the current policy is the best so far
         """
         self.logger.log_reward_losses(rewards, self.nb_steps)
 
@@ -184,6 +186,8 @@ class RLBase(ABC):
             )
             self.best_reward = rewards_mean
             return True
+
+        return False
 
     def save_stats(self):
         """Save reward statistics into `stats.npy`"""
