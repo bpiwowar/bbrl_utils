@@ -199,8 +199,8 @@ class RLBase(ABC):
     def visualize_best(self):
         """Visualize the best agent"""
         env = self.make_env(render_mode="rgb_array")
-        path = self.base_dir / "best_agent.mp4"
-        print(f"Video of best agent recorded in {path}")
+        path = self.base_dir / "best_agent"
+        print(f"Video of best agent recorded in folder {path}")
         record_video(env, self.best_policy, path)
         return video_display(str(path.absolute()))
 
