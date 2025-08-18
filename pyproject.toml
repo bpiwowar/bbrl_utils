@@ -7,7 +7,7 @@ readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Benjamin Piwowarski", email = "benjamin@piwowarski.fr" }]
 dependencies = [
     "easypip",
-    "bbrl>=1.0.0",
+    "bbrl>=1.0.1",
     "bbrl_gymnasium>=1.0.0",
     "tensorboard",
     "pygame"
