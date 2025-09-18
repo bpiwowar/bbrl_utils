@@ -66,7 +66,10 @@ class RLBase(ABC):
     def __init__(self, cfg, env_wrappers=[]):
         # Basic initialization
         self.cfg = cfg
-        self.make_env = partial(make_env, cfg.gym_env.env_name, wrappers=env_wrappers)
+        kwargs = getattr(cfg.gym_env, "env_args", {})
+        self.make_env = partial(
+            make_env, cfg.gym_env.env_name, wrappers=env_wrappers, **kwargs
+        )
         torch.manual_seed(cfg.algorithm.seed)
 
         # Sets the base directory and logger directory
