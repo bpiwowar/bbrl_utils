@@ -8,6 +8,8 @@ authors = [{ name = "Benjamin Piwowarski", email = "benjamin@piwowarski.fr" }]
 dependencies = [
     "easypip",
     "bbrl>=1.0.1",
+    # For now, use moviepy v1
+    "moviepy>=1",
     "bbrl_gymnasium>=1.0.0",
     "tensorboard",
     "pygame"
